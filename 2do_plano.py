@@ -322,12 +322,11 @@ def sanitize_filename(name):
     return "".join(c if c.isalnum() or c in "._- " else "_" for c in name).strip()[:100]
 
 def save_trend_data(trend, tweets):
-    """Guarda los datos de la tendencia y descarga las imágenes."""
+    """Guarda los datos de la tendencia directamente en OUTPUT_DIR y las imágenes en IMAGES_DIR."""
     trend_filename = sanitize_filename(trend)
-    trend_dir = os.path.join(OUTPUT_DIR, trend_filename)
-    trend_images_dir = os.path.join(IMAGES_DIR, trend_filename)
     
-    os.makedirs(trend_dir, exist_ok=True)
+    # Crear carpeta específica para las imágenes de esta tendencia
+    trend_images_dir = os.path.join(IMAGES_DIR, trend_filename)
     os.makedirs(trend_images_dir, exist_ok=True)
 
     # Procesar tweets y descargar imágenes
@@ -345,7 +344,8 @@ def save_trend_data(trend, tweets):
             saved_path = download_image(img_url, trend_images_dir, image_name)
             
             if saved_path:
-                rel_path = os.path.relpath(saved_path, OUTPUT_DIR)
+                # Guardar ruta relativa desde el directorio de imágenes
+                rel_path = os.path.relpath(saved_path, IMAGES_DIR)
                 processed_tweet["downloaded_images"].append(rel_path)
                 image_count += 1
         
@@ -361,7 +361,7 @@ def save_trend_data(trend, tweets):
                 saved_path = download_image(img_url, trend_images_dir, image_name)
                 
                 if saved_path:
-                    rel_path = os.path.relpath(saved_path, OUTPUT_DIR)
+                    rel_path = os.path.relpath(saved_path, IMAGES_DIR)
                     processed_reply["downloaded_images"].append(rel_path)
                     image_count += 1
             
@@ -370,7 +370,7 @@ def save_trend_data(trend, tweets):
         processed_tweet["thread_replies"] = processed_replies
         processed_tweets.append(processed_tweet)
 
-    # Guardar datos en JSON
+    # Guardar datos en JSON directamente en OUTPUT_DIR
     data = {
         "trend": trend,
         "scraped_at": datetime.now().isoformat(),
@@ -380,7 +380,8 @@ def save_trend_data(trend, tweets):
         "tweets": processed_tweets
     }
 
-    json_path = os.path.join(trend_dir, f"{trend_filename}.json")
+    # Guardar directamente en OUTPUT_DIR sin subcarpeta
+    json_path = os.path.join(OUTPUT_DIR, f"{trend_filename}.json")
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
