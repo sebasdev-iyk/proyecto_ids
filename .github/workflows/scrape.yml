@@ -57,13 +57,53 @@ jobs:
       env:
         DISPLAY: ":99"
         
-    - name: Subir resultados
+    - name: Verificar cambios en tuits
+      run: |
+        if [ -d "tuits/" ] && [ "$(ls -A tuits/)" ]; then
+          echo "hay_cambios=true" >> $GITHUB_ENV
+          echo "✅ Hay nuevos datos en la carpeta tuits/"
+        else
+          echo "hay_cambios=false" >> $GITHUB_ENV
+          echo "ℹ️  No hay datos nuevos en la carpeta tuits/"
+        fi
+
+    - name: Configurar git para commits
+      if: env.hay_cambios == 'true'
+      run: |
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+
+    - name: Subir resultados como artefacto
+      if: env.hay_cambios == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: tuits-${{ github.run_id }}-${{ github.run_attempt }}
         path: tuits/
         retention-days: 7
-        
+
+    - name: Commit y push de datos actualizados
+      if: env.hay_cambios == 'true'
+      run: |
+        echo "🔄 Agregando archivos a git..."
+        git add tuits/
+
+        # Verificar si hay cambios para commitear
+        if ! git diff --cached --quiet; then
+          echo "📁 Committing archivos actualizados..."
+          git commit -m "🐦 Actualizar datos de tweets scrapeados
+
+          - Nuevos datos guardados en tuits/
+          - Ejecución: ${{ github.run_id }} - Intento: ${{ github.run_attempt }}
+          - Fecha: $(date)"
+
+          echo "⬆️  Pushing cambios al repositorio..."
+          git push origin HEAD:${{ github.ref_name }}
+          echo "✅ Datos subidos exitosamente al repositorio"
+        else
+          echo "ℹ️  No hay cambios para commitear"
+        fi
+
     - name: Limpiar credenciales (IMPORTANTE)
       run: |
         echo "🧹 barriendo sin escoba"
