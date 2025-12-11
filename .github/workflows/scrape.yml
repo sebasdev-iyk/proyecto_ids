@@ -14,6 +14,9 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
     timeout-minutes: 200
+    permissions:
+      contents: write  # Permite push al repositorio
+      actions: read    # Permite leer otros actions
     
     steps:
     - name: Checkout code
@@ -85,27 +88,17 @@ jobs:
     - name: Commit y push de datos actualizados
       if: env.hay_cambios == 'true'
       run: |
-        echo "🔄 Agregando archivos a git..."
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
         git add tuits/
-
-        # Verificar si hay cambios para commitear
         if ! git diff --cached --quiet; then
-          echo "📁 Committing archivos actualizados..."
-          git commit -m "🐦 Actualizar datos de tweets scrapeados
-
-          - Nuevos datos guardados en tuits/
-          - Ejecución: ${{ github.run_id }} - Intento: ${{ github.run_attempt }}
-          - Fecha: $(date)"
-
-          echo "⬆️  Pushing cambios al repositorio..."
-          git push origin HEAD:${{ github.ref_name }}
-          echo "✅ Datos subidos exitosamente al repositorio"
-        else
-          echo "ℹ️  No hay cambios para commitear"
+          git commit -m "🐦 Actualizar datos de tweets scrapeados - $(date +'%Y-%m-%d %H:%M')"
+          git push
         fi
 
     - name: Limpiar credenciales (IMPORTANTE)
+      if: always()  # Se ejecuta incluso si fallan otros pasos
       run: |
-        echo "🧹 barriendo sin escoba"
-        rm -f login/logged_in_confirmation.png
-        echo "✅ Credenciales eliminadas del workspace"
+        echo "🧹 Eliminando archivos sensibles..."
+        rm -f login/*.json login/*.png 2>/dev/null || true
+        echo "✅ Limpieza completada"

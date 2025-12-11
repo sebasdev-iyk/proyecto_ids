@@ -393,7 +393,7 @@ def save_trend_data(trend, tweets):
 
 def main():
     print("🚀 Iniciando scraping completo de tendencias con tweets y respuestas (MODO SEGUNDO PLANO)")
-    
+
     with sync_playwright() as pw:
         browser = pw.chromium.launch(
             headless=True,  # CAMBIADO: Ahora se ejecuta en modo headless (sin interfaz)
@@ -432,7 +432,8 @@ def main():
 
             if not trends:
                 print("❌ No se encontraron tendencias.")
-                return
+                # ✅ Salir limpiamente si no hay datos
+                return 0  # Código de éxito para no detener el workflow
 
             print(f"\n🔍 Procesando {min(len(trends), MAX_TRENDS)} tendencias...")
             total_images = 0
@@ -444,7 +445,7 @@ def main():
                 try:
                     print(f"\n📋 Procesando tendencia {i}/{MAX_TRENDS}: {trend}")
                     tweets = scrape_tweets_from_trend(context, trend, max_tweets=MAX_TWEETS, max_replies_per_tweet=MAX_REPLIES_PER_TWEET)
-                    
+
                     if tweets:
                         json_path, image_count = save_trend_data(trend, tweets)
                         total_images += image_count
@@ -459,7 +460,14 @@ def main():
                         time.sleep(10)
 
                 except Exception as e:
-                    print(f"❌ Error al scrapear '{trend}': {e}")
+                    print(f"❌ Error crítico al procesar '{trend}': {str(e)}")
+                    # ✅ Continuar con la siguiente tendencia en lugar de fallar todo
+                    continue
+
+            # ✅ Si no se encontraron TENDENCIAS VÁLIDAS, evitar subir datos vacíos
+            if total_tweets == 0:
+                print("⚠️ No se obtuvieron tweets válidos. Abortando commit.")
+                return 0
 
             print(f"\n🎉 ¡Proceso completado!")
             print(f"📊 Tendencias procesadas: {min(len(trends), MAX_TRENDS)}")
@@ -471,6 +479,8 @@ def main():
 
         except Exception as e:
             print(f"❌ Error general en el proceso: {e}")
+            # ✅ Manejar correctamente la excepción general
+            return 1
         finally:
             browser.close()
 
