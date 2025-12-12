@@ -1,8 +1,8 @@
-name: Twitter Scraper (SIN SECRETS - INSEGURO)
+name: canbio-del-tiempo-a-cada-12-horas
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Ejecuta cada 6 horas
+    - cron: '0 */12 * * *'  # Ejecuta cada 6 horas
   workflow_dispatch:  # Permite ejecución manual
   push:
     branches: [ main ]
